@@ -27,6 +27,6 @@ class TestLeafNode(unittest.TestCase):
   def test_to_html_a(self):
     node = LeafNode("a", "Hello world", props)
     self.assertEqual(node.to_html(), f"<a href=\"https://www.google.com\" target=\"_blank\">Hello world</a>")
-    
+
 if __name__ == "__main__":
   unittest.main() 

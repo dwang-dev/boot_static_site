@@ -2,7 +2,7 @@ import unittest
 
 from htmlnode import HTMLNode, LeafNode, ParentNode
 from textnode import TextNode, TextType
-from helpers import text_node_to_html_node, split_nodes_delimiter
+from helpers import text_node_to_html_node, split_nodes_delimiter, extract_markdown_images
 
 props = {
   "href": "https://www.google.com",
@@ -73,7 +73,7 @@ class TestNode(unittest.TestCase):
   def test_props_to_html(self):
     node = LeafNode("p", "Hello world", props=props)
     self.assertEqual(node.props_to_html(), ' href="https://www.google.com" target="_blank"')
-  
+
   def test_no_value_raises_err(self):
     with self.assertRaises(ValueError):
       node = LeafNode("p", None)
@@ -138,7 +138,7 @@ class TestNode(unittest.TestCase):
     child_node = ParentNode("span", [grandchild_node])
     parent_node = ParentNode("div", [child_node])
     self.assertEqual(parent_node.to_html(),"<div><span>grandchild</span></div>")
-  
+
   def test_parentnode_multiple_grandchildren(self):
     grandchild_node1 = LeafNode("b", "grandchild")
     grandchild_node2 = LeafNode("a", "grandchild2")
@@ -249,6 +249,52 @@ class TestNode(unittest.TestCase):
     self.assertEqual(len(new_nodes), 1)
     self.assertEqual(new_nodes[0], TextNode("This is text with a `code block` word", TextType.CODE))
 
+  ################################################################
+  ############### split_nodes_delimiter Node Tests ###############
+  ################################################################
+
+  def test_extract_md_imgs(self):
+    text = "This is text with a ![rick roll](https://i.imgur.com/aKaOqIh.gif) and ![obi wan](https://i.imgur.com/fJRm4Vk.jpeg)"
+    md_imgs = extract_markdown_images(text)
+    self.assertEqual(len(md_imgs), 2)
+    self.assertEqual(md_imgs[0], ("rick roll", "https://i.imgur.com/aKaOqIh.gif"))
+    self.assertEqual(md_imgs[1], ("obi wan", "https://i.imgur.com/fJRm4Vk.jpeg"))
+  
+  def test_extract_md_imgs_no_brackets(self):
+    text = "This is text with a !rick roll(https://i.imgur.com/aKaOqIh.gif)"
+    md_imgs = extract_markdown_images(text)
+    self.assertEqual(len(md_imgs), 0)
+
+  def test_extract_md_imgs_no_opening_brackets(self):
+    text = "This is text with a !rick roll](https://i.imgur.com/aKaOqIh.gif)"
+    md_imgs = extract_markdown_images(text)
+    self.assertEqual(len(md_imgs), 0)
+
+  def test_extract_md_imgs_no_closing_brackets(self):
+    text = "This is text with a ![rick roll(https://i.imgur.com/aKaOqIh.gif)"
+    md_imgs = extract_markdown_images(text)
+    self.assertEqual(len(md_imgs), 0)
+
+  def test_extract_md_imgs_no_parenthesis(self):
+    text = "This is text with a ![rick roll]https://i.imgur.com/aKaOqIh.gif"
+    md_imgs = extract_markdown_images(text)
+    self.assertEqual(len(md_imgs), 0)
+
+  def test_extract_md_imgs_no_opening_parenthesis(self):
+    text = "This is text with a ![rick roll]https://i.imgur.com/aKaOqIh.gif)"
+    md_imgs = extract_markdown_images(text)
+    self.assertEqual(len(md_imgs), 0)
+
+  def test_extract_md_imgs_no_closing_parenthesis(self):
+    text = "This is text with a ![rick roll](https://i.imgur.com/aKaOqIh.gif"
+    md_imgs = extract_markdown_images(text)
+    self.assertEqual(len(md_imgs), 0)
+  
+  def test_extract_md_imgs_no_exclamation(self):
+    text = "This is text with a [rick roll](https://i.imgur.com/aKaOqIh.gif)"
+    md_imgs = extract_markdown_images(text)
+    self.assertEqual(len(md_imgs), 0)
+
 
 if __name__ == "__main__":
-  unittest.main() 
+  unittest.main()

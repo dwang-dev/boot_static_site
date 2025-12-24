@@ -519,7 +519,65 @@ class TestNode(unittest.TestCase):
       TextNode(" with an", TextType.TEXT),
     ], nodes)
 
-  def test_text_to_textnode(self):
+  def test_text_to_textnode_only_italic(self):
+    text = "This is _text_ with an"
+    nodes = text_to_textnodes(text)
+    self.assertListEqual([
+      TextNode("This is ", TextType.TEXT),
+      TextNode("text", TextType.ITALIC),
+      TextNode(" with an", TextType.TEXT),
+    ], nodes)
+
+  def test_text_to_textnode_only_code(self):
+    text = "This is `text` with an"
+    nodes = text_to_textnodes(text)
+    self.assertListEqual([
+      TextNode("This is ", TextType.TEXT),
+      TextNode("text", TextType.CODE),
+      TextNode(" with an", TextType.TEXT),
+    ], nodes)
+    
+  def test_text_to_textnode_only_img(self):
+    text = "This is ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) with an"
+    nodes = text_to_textnodes(text)
+    self.assertListEqual([
+      TextNode("This is ", TextType.TEXT),
+      TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"),
+      TextNode(" with an", TextType.TEXT),
+    ], nodes)
+
+  def test_text_to_textnode_only_link(self):
+    text = "This is [obi wan link](https://i.imgur.com/fJRm4Vk.jpeg) with an"
+    nodes = text_to_textnodes(text)
+    self.assertListEqual([
+      TextNode("This is ", TextType.TEXT),
+      TextNode("obi wan link", TextType.LINK, "https://i.imgur.com/fJRm4Vk.jpeg"),
+      TextNode(" with an", TextType.TEXT),
+    ], nodes)
+
+  def test_text_to_textnode_multiple_bold(self):
+    text = "This is **text** with an **text2**"
+    nodes = text_to_textnodes(text)
+    self.assertListEqual([
+      TextNode("This is ", TextType.TEXT),
+      TextNode("text", TextType.BOLD),
+      TextNode(" with an ", TextType.TEXT),
+      TextNode("text2", TextType.BOLD),
+    ], nodes)
+
+  def test_text_to_textnode_multiple_bold_one_italic(self):
+    text = "This is **text** with an **text2** _italictext_"
+    nodes = text_to_textnodes(text)
+    self.assertListEqual([
+      TextNode("This is ", TextType.TEXT),
+      TextNode("text", TextType.BOLD),
+      TextNode(" with an ", TextType.TEXT),
+      TextNode("text2", TextType.BOLD),
+      TextNode(" ", TextType.TEXT),
+      TextNode("italictext", TextType.ITALIC),
+    ], nodes)
+
+  def test_text_to_textnode_all_options(self):
     text = "This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
     nodes = text_to_textnodes(text)
     self.assertListEqual([

@@ -1,6 +1,15 @@
 from textnode import TextNode, TextType
 from htmlnode import LeafNode, HTMLNode
 import re
+from enum import Enum
+
+class BlockType(Enum):
+  PARAGRAPH = 1
+  HEADING = 2
+  CODE = 3
+  QUOTE = 4
+  UNORDERED_LIST = 5
+  ORDERED_LIST = 6
 
 def text_node_to_html_node(text_node: TextNode) -> HTMLNode:
   match text_node.text_type:
@@ -92,3 +101,10 @@ def text_to_textnodes(text: str) -> list[TextNode]:
   nodes = split_nodes_link(nodes)
   nodes = split_nodes_image(nodes)
   return nodes
+
+def markdown_to_blocks(markdown: str) -> list[str]:
+  blocks: list[str] = markdown.split("\n\n")
+  for i in range(len(blocks)):
+    blocks[i] = blocks[i].strip()
+  return [b for b in blocks if b != ""]
+

@@ -1,8 +1,8 @@
 from textnode import TextNode, TextType
-from htmlnode import LeafNode
+from htmlnode import LeafNode, HTMLNode
 import re
 
-def text_node_to_html_node(text_node: TextNode):
+def text_node_to_html_node(text_node: TextNode) -> HTMLNode:
   match text_node.text_type:
     case TextType.TEXT:
       return LeafNode(None, text_node.text)
@@ -19,8 +19,8 @@ def text_node_to_html_node(text_node: TextNode):
     case _:
       raise Exception("Invalid text type")
 
-def split_nodes_delimiter(old_nodes, delimiter, text_type):
-  new_nodes = []
+def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: TextType) -> list[TextNode]:
+  new_nodes: list[TextNode] = []
   for node in old_nodes:
     if node.text_type != TextType.TEXT:
       new_nodes.append(node)
@@ -38,13 +38,13 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
         new_nodes.append(TextNode(splits[i], text_type))
   return new_nodes
 
-def extract_markdown_images(text):
+def extract_markdown_images(text: str) -> list[tuple[str, str]]:
   return re.findall(r"!\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
 
-def extract_markdown_links(text):
+def extract_markdown_links(text: str) -> list[tuple[str, str]]:
   return re.findall(r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)", text)
           
-def split_nodes_image(old_nodes):
+def split_nodes_image(old_nodes: list[TextNode]) -> list[TextNode]:
   new_nodes = []
   for old_node in old_nodes:
     md_imgs = extract_markdown_images(old_node.text)
@@ -64,7 +64,7 @@ def split_nodes_image(old_nodes):
       new_nodes.append(TextNode(unprocessed_text, TextType.TEXT))
   return new_nodes
 
-def split_nodes_link(old_nodes):
+def split_nodes_link(old_nodes: list[TextNode]) -> list[TextNode]:
   new_nodes = []
   for old_node in old_nodes:
     md_links = extract_markdown_links(old_node.text)
@@ -84,7 +84,7 @@ def split_nodes_link(old_nodes):
       new_nodes.append(TextNode(unprocessed_text, TextType.TEXT))
   return new_nodes
 
-def text_to_textnodes(text):
+def text_to_textnodes(text: str) -> list[TextNode]:
   og_textnode = TextNode(text, TextType.TEXT)
   nodes = split_nodes_delimiter([og_textnode], "`", TextType.CODE)
   nodes = split_nodes_delimiter(nodes, "**", TextType.BOLD)

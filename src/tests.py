@@ -2,7 +2,10 @@ import unittest
 
 from htmlnode import HTMLNode, LeafNode, ParentNode
 from textnode import TextNode, TextType
-from helpers import text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, extract_markdown_links
+from helpers import (text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, 
+                     extract_markdown_links, split_nodes_image, split_nodes_link,
+                     text_to_textnodes
+                     )
 
 props = {
   "href": "https://www.google.com",
@@ -189,7 +192,7 @@ class TestNode(unittest.TestCase):
     self.assertEqual(html_node.props, {"src": f"dummylink.com", "alt": "alt text"})
 
   ################################################################
-  ############### split_nodes_delimitera() Tests #################
+  ############### split_nodes_delimiter() Tests #################
   ################################################################
 
   def test_split_nodes_delimiter_code(self):
@@ -228,10 +231,35 @@ class TestNode(unittest.TestCase):
     self.assertEqual(new_nodes[4], TextNode("code block", TextType.CODE))
     self.assertEqual(new_nodes[5], TextNode(" word", TextType.TEXT))
 
-  def test_split_nodes_delimiter_throws_no_delimiter(self):
-    node = TextNode("This is text with a code block word", TextType.TEXT)
-    with self.assertRaises(Exception):
-      new_nodes = split_nodes_delimiter([node], "`", TextType.CODE)
+  def test_split_nodes_delimiter_no_text_lhs(self):
+    node = TextNode("`code block` word", TextType.TEXT)
+    new_nodes = split_nodes_delimiter([node], "`", TextType.CODE)
+    self.assertEqual(len(new_nodes), 2)
+    self.assertEqual(new_nodes[0], TextNode("code block", TextType.CODE))
+    self.assertEqual(new_nodes[1], TextNode(" word", TextType.TEXT))
+
+  def test_split_nodes_delimiter_no_text_rhs(self):
+    node = TextNode("word `code block`", TextType.TEXT)
+    new_nodes = split_nodes_delimiter([node], "`", TextType.CODE)
+    self.assertEqual(len(new_nodes), 2)
+    self.assertEqual(new_nodes[0], TextNode("word ", TextType.TEXT))
+    self.assertEqual(new_nodes[1], TextNode("code block", TextType.CODE))
+
+  def test_split_nodes_delimiter_multiple_delimiters(self):
+    node = TextNode("First `code block` word. Second `code block` word", TextType.TEXT)
+    new_nodes = split_nodes_delimiter([node], "`", TextType.CODE)
+    self.assertEqual(len(new_nodes), 5)
+    self.assertEqual(new_nodes[0], TextNode("First ", TextType.TEXT))
+    self.assertEqual(new_nodes[1], TextNode("code block", TextType.CODE))
+    self.assertEqual(new_nodes[2], TextNode(" word. Second ", TextType.TEXT))
+    self.assertEqual(new_nodes[3], TextNode("code block", TextType.CODE))
+    self.assertEqual(new_nodes[4], TextNode(" word", TextType.TEXT))
+
+  def test_split_nodes_delimiter_no_text_lhs_rhs(self):
+    node = TextNode("`code block`", TextType.TEXT)
+    new_nodes = split_nodes_delimiter([node], "`", TextType.CODE)
+    self.assertEqual(len(new_nodes), 1)
+    self.assertEqual(new_nodes[0], TextNode("code block", TextType.CODE))
 
   def test_split_nodes_delimiter_throws_missing_delimiter(self):
     node = TextNode("This is text with a `code block word", TextType.TEXT)
@@ -322,56 +350,190 @@ class TestNode(unittest.TestCase):
   ################################################################
 
   def test_extract_md_links(self):
-    text = "This is text with a [rick roll](https://i.imgur.com/aKaOqIh.gif) and [obi wan](https://i.imgur.com/fJRm4Vk.jpeg)"
+    text = "[rick roll](https://i.imgur.com/aKaOqIh.gif)[obi wan](https://i.imgur.com/fJRm4Vk.jpeg)"
     md_imgs = extract_markdown_links(text)
     self.assertEqual(len(md_imgs), 2)
     self.assertEqual(md_imgs[0], ("rick roll", "https://i.imgur.com/aKaOqIh.gif"))
     self.assertEqual(md_imgs[1], ("obi wan", "https://i.imgur.com/fJRm4Vk.jpeg"))
 
   def test_extract_md_links_no_brackets(self):
-    text = "This is text with a rick roll(https://i.imgur.com/aKaOqIh.gif)"
+    text = "rick roll(https://i.imgur.com/aKaOqIh.gif)"
     md_imgs = extract_markdown_links(text)
     self.assertEqual(len(md_imgs), 0)
 
   def test_extract_md_links_no_opening_brackets(self):
-    text = "This is text with a rick roll](https://i.imgur.com/aKaOqIh.gif)"
+    text = "rick roll](https://i.imgur.com/aKaOqIh.gif)"
     md_imgs = extract_markdown_links(text)
     self.assertEqual(len(md_imgs), 0)
 
   def test_extract_md_links_no_closing_brackets(self):
-    text = "This is text with a [rick roll(https://i.imgur.com/aKaOqIh.gif)"
+    text = "[rick roll(https://i.imgur.com/aKaOqIh.gif)"
     md_imgs = extract_markdown_links(text)
     self.assertEqual(len(md_imgs), 0)
 
   def test_extract_md_links_no_parenthesis(self):
-    text = "This is text with a [rick roll]https://i.imgur.com/aKaOqIh.gif"
+    text = "[rick roll]https://i.imgur.com/aKaOqIh.gif"
     md_imgs = extract_markdown_links(text)
     self.assertEqual(len(md_imgs), 0)
 
   def test_extract_md_links_no_opening_parenthesis(self):
-    text = "This is text with a [rick roll]https://i.imgur.com/aKaOqIh.gif)"
+    text = "[rick roll]https://i.imgur.com/aKaOqIh.gif)"
     md_imgs = extract_markdown_links(text)
     self.assertEqual(len(md_imgs), 0)
 
   def test_extract_md_links_no_closing_parenthesis(self):
-    text = "This is text with a [rick roll](https://i.imgur.com/aKaOqIh.gif"
+    text = "[rick roll](https://i.imgur.com/aKaOqIh.gif"
     md_imgs = extract_markdown_links(text)
     self.assertEqual(len(md_imgs), 0)
   
+  # TODO fix with left bracket in text.
   # def test_extract_md_links_l_bracket_in_alt_text(self):
-  #   text = "This is text with a [rick [roll](https://i.imgur.com/aKaOqIh.gif)"
+  #   text = "[rick [roll](https://i.imgur.com/aKaOqIh.gif)"
   #   md_imgs = extract_markdown_links(text)
   #   self.assertEqual(len(md_imgs), 0)
 
   def test_extract_md_links_r_bracket_in_alt_text(self):
-    text = "This is text with a [rick ]roll](https://i.imgur.com/aKaOqIh.gif)"
+    text = "[rick ]roll](https://i.imgur.com/aKaOqIh.gif)"
     md_imgs = extract_markdown_links(text)
     self.assertEqual(len(md_imgs), 0)
 
   def test_extract_md_links_l_parenthesis_in_link(self):
-    text = "This is text with a [rick roll](https://i.im(gur.com/aKaOqIh.gif)"
+    text = "[rick roll](https://i.im(gur.com/aKaOqIh.gif)"
     md_imgs = extract_markdown_links(text)
     self.assertEqual(len(md_imgs), 0)
+
+  ################################################################
+  ############### split_nodes_image() Tests ######################
+  ################################################################
+
+  def test_split_images_single_img(self):
+    node = TextNode(
+        "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png). Cool image right?",
+        TextType.TEXT,
+    )
+    new_nodes = split_nodes_image([node])
+    self.assertListEqual(
+        [
+            TextNode("This is text with an ", TextType.TEXT),
+            TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+            TextNode(". Cool image right?", TextType.TEXT),
+        ],
+        new_nodes,
+    )
+
+  def test_split_images_multiple_imgs(self):
+    node = TextNode(
+        "This is text with an ![image](https://i.imgur.com/zjjcJKZ.png) and another ![second image](https://i.imgur.com/3elNhQu.png)",
+        TextType.TEXT,
+    )
+    new_nodes = split_nodes_image([node])
+    self.assertListEqual(
+        [
+            TextNode("This is text with an ", TextType.TEXT),
+            TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+            TextNode(" and another ", TextType.TEXT),
+            TextNode(
+                "second image", TextType.IMAGE, "https://i.imgur.com/3elNhQu.png"
+            ),
+        ],
+        new_nodes,
+    )
+      
+  def test_split_images_no_img(self):
+    node = TextNode(
+        "This is text with no image. Cool non-image right?",
+        TextType.TEXT,
+    )
+    new_nodes = split_nodes_image([node])
+    self.assertListEqual([node], new_nodes)
+
+  def test_split_images_no_valid_img(self):
+    node = TextNode(
+        "This is text with an image(https://i.imgur.com/zjjcJKZ.png). Cool image right?",
+        TextType.TEXT,
+    )
+    new_nodes = split_nodes_image([node])
+    self.assertListEqual([node], new_nodes)
+    
+  ################################################################
+  ############### split_nodes_link() Tests #######################
+  ################################################################
+
+  def test_split_links_single_link(self):
+    node = TextNode(
+        "This is a link [Link Text](https://i.imgur.com/zjjcJKZ.png). Cool link right?",
+        TextType.TEXT,
+    )
+    new_nodes = split_nodes_link([node])
+    self.assertListEqual(
+        [
+            TextNode("This is a link ", TextType.TEXT),
+            TextNode("Link Text", TextType.LINK, "https://i.imgur.com/zjjcJKZ.png"),
+            TextNode(". Cool link right?", TextType.TEXT),
+        ],
+        new_nodes,
+    )
+
+  def test_split_links_multiple_links(self):
+    node = TextNode(
+        "This is a link [Link Text](https://i.imgur.com/zjjcJKZ.png) and another [Link2 Text](https://i.imgur.com/3elNhQu.png)",
+        TextType.TEXT,
+    )
+    new_nodes = split_nodes_link([node])
+    self.assertListEqual(
+        [
+            TextNode("This is a link ", TextType.TEXT),
+            TextNode("Link Text", TextType.LINK, "https://i.imgur.com/zjjcJKZ.png"),
+            TextNode(" and another ", TextType.TEXT),
+            TextNode("Link2 Text", TextType.LINK, "https://i.imgur.com/3elNhQu.png")
+        ],
+        new_nodes,
+    )
+
+  def test_split_link_no_link(self):
+    node = TextNode(
+        "This is text with no image. Cool non-image right?",
+        TextType.TEXT,
+    )
+    new_nodes = split_nodes_link([node])
+    self.assertListEqual([node], new_nodes)
+
+  def test_split_images_no_valid_link(self):
+    node = TextNode(
+        "This is text with an image(https://i.imgur.com/zjjcJKZ.png). Cool image right?",
+        TextType.TEXT,
+    )
+    new_nodes = split_nodes_link([node])
+    self.assertListEqual([node], new_nodes)
+
+  ################################################################
+  ############### text_to_textnode Tests #########################
+  ################################################################
+
+  def test_text_to_textnode_only_bold(self):
+    text = "This is **text** with an"
+    nodes = text_to_textnodes(text)
+    self.assertListEqual([
+      TextNode("This is ", TextType.TEXT),
+      TextNode("text", TextType.BOLD),
+      TextNode(" with an", TextType.TEXT),
+    ], nodes)
+
+  def test_text_to_textnode(self):
+    text = "This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+    nodes = text_to_textnodes(text)
+    self.assertListEqual([
+      TextNode("This is ", TextType.TEXT),
+      TextNode("text", TextType.BOLD),
+      TextNode(" with an ", TextType.TEXT),
+      TextNode("italic", TextType.ITALIC),
+      TextNode(" word and a ", TextType.TEXT),
+      TextNode("code block", TextType.CODE),
+      TextNode(" and an ", TextType.TEXT),
+      TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"),
+      TextNode(" and a ", TextType.TEXT),
+      TextNode("link", TextType.LINK, "https://boot.dev"),
+    ], nodes)
 
 if __name__ == "__main__":
   unittest.main()

@@ -2,6 +2,7 @@ from textnode import TextNode, TextType
 from htmlnode import LeafNode, HTMLNode
 import re
 from enum import Enum
+import re
 
 class BlockType(Enum):
   PARAGRAPH = 1
@@ -105,6 +106,36 @@ def text_to_textnodes(text: str) -> list[TextNode]:
 def markdown_to_blocks(markdown: str) -> list[str]:
   blocks: list[str] = markdown.split("\n\n")
   for i in range(len(blocks)):
-    blocks[i] = blocks[i].strip()
+    blocks[i] = blocks[i].strip(" \n")
   return [b for b in blocks if b != ""]
 
+def block_to_blocktype(text: str) -> BlockType:
+  if re.search(r"^#{0,6} .*$", text):
+    return BlockType.HEADING
+  elif re.search(r"^`{3}.*`{3}$", text):
+    return BlockType.CODE
+  blocktype: BlockType = None
+  pattern: str = ""
+  lines: list[str] = text.split("\n")
+  if re.search(r"^>.*$", lines[0]):
+    blocktype = BlockType.QUOTE
+    pattern = r"^>.*$"
+  elif re.search(r"^- .*$", lines[0]):
+    blocktype = BlockType.UNORDERED_LIST
+    pattern = r"^- .*$"
+  elif m := re.search(r"^(\d+)\. .*$", lines[0]):
+    blocktype = BlockType.ORDERED_LIST
+    pattern = r"^(\d+)\. .*$"
+    expected_ol_idx = int(m.group(1))
+  else:
+    return BlockType.PARAGRAPH
+  for l in lines:
+    match = re.search(pattern, l)
+    if not match:
+      return BlockType.PARAGRAPH
+    elif blocktype == BlockType.ORDERED_LIST:
+      ol_idx = int(match.group(1))
+      if ol_idx != expected_ol_idx:
+        return BlockType.PARAGRAPH
+      expected_ol_idx += 1
+  return blocktype

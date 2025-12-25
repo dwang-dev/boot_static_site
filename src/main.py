@@ -1,7 +1,6 @@
 from textnode import TextNode, TextType
 from htmlnode import LeafNode
 import helpers
-    
-node = TextNode("`code block` word", TextType.TEXT)
-new_nodes = helpers.split_nodes_delimiter([node], "`", TextType.CODE)
-print(new_nodes)
+
+type = helpers.block_to_blocktype("- Item1\n- Item2\n- Item")
+print(type)

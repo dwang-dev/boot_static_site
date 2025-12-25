@@ -4,7 +4,7 @@ from htmlnode import HTMLNode, LeafNode, ParentNode
 from textnode import TextNode, TextType
 from helpers import (text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, 
                      extract_markdown_links, split_nodes_image, split_nodes_link,
-                     text_to_textnodes, markdown_to_blocks
+                     text_to_textnodes, markdown_to_blocks, block_to_blocktype, BlockType
                      )
 
 props = {
@@ -653,6 +653,83 @@ This is **bolded** paragraph
     md = ""
     blocks = markdown_to_blocks(md)
     self.assertEqual(blocks, [])
+
+  ##########################################################################
+  ############### block_to_blocktype tests #################################
+  ##########################################################################
+
+  def test_block_to_blocktype_heading1(self):
+    type = block_to_blocktype("# H1")
+    self.assertEqual(type, BlockType.HEADING)
+
+  def test_block_to_blocktype_heading2(self):
+    type = block_to_blocktype("## H2")
+    self.assertEqual(type, BlockType.HEADING)
+
+  def test_block_to_blocktype_heading3(self):
+    type = block_to_blocktype("### H3")
+    self.assertEqual(type, BlockType.HEADING)
+
+  def test_block_to_blocktype_heading4(self):
+    type = block_to_blocktype("#### H4")
+    self.assertEqual(type, BlockType.HEADING)
+
+  def test_block_to_blocktype_heading5(self):
+    type = block_to_blocktype("##### H5")
+    self.assertEqual(type, BlockType.HEADING)
+
+  def test_block_to_blocktype_heading6(self):
+    type = block_to_blocktype("###### H6")
+    self.assertEqual(type, BlockType.HEADING)
+
+  def test_block_to_blocktype_heading_no_space(self):
+    type = block_to_blocktype("#H1")
+    self.assertEqual(type, BlockType.PARAGRAPH)
+
+  def test_block_to_blocktype_heading7(self):
+    text = "####### H1"
+    type = block_to_blocktype(text)
+    self.assertEqual(type, BlockType.PARAGRAPH)
+
+  def test_block_to_blocktype_codeblock(self):
+    type = block_to_blocktype("```Code Block```")
+    self.assertEqual(type, BlockType.CODE)
+
+  def test_block_to_blocktype_invalid_codeblock(self):
+    type = block_to_blocktype("`Code Block```")
+    self.assertEqual(type, BlockType.PARAGRAPH)
+  
+  def test_block_to_blocktype_quoteblock(self):
+    type = block_to_blocktype(">Line1\n>Line2\n>Line3")
+    self.assertEqual(type, BlockType.QUOTE)
+
+  def test_block_to_blocktype_invalid_quoteblock(self):
+    type = block_to_blocktype(">Line1\nLine2\n>Line3")
+    self.assertEqual(type, BlockType.PARAGRAPH)
+
+  def test_block_to_blocktype_ul(self):
+    type = block_to_blocktype("- Item1\n- Item2\n- Item3")
+    self.assertEqual(type, BlockType.UNORDERED_LIST)
+
+  def test_block_to_blocktype_ul_invalid(self):
+    type = block_to_blocktype("- Item1\nItem2\n - Item3")
+    self.assertEqual(type, BlockType.PARAGRAPH)
+
+  def test_block_to_blocktype_ol(self):
+    type = block_to_blocktype("1. Item1\n2. Item2\n3. Item3")
+    self.assertEqual(type, BlockType.ORDERED_LIST)
+
+  def test_block_to_blocktype_ol_invalid(self):
+    type = block_to_blocktype("1. Item1\nItem2\n3. Item3")
+    self.assertEqual(type, BlockType.PARAGRAPH)
+
+  def test_block_to_blocktype_ol_invalid_indexes(self):
+    type = block_to_blocktype("1. Item1\n3. Item2\n2. Item3")
+    self.assertEqual(type, BlockType.PARAGRAPH)
+  
+  def test_block_to_blocktype_normal_paragraph(self):
+    type = block_to_blocktype("Hello world")
+    self.assertEqual(type, BlockType.PARAGRAPH)
 
 if __name__ == "__main__":
   unittest.main()

@@ -1,8 +1,7 @@
-from textnode import TextNode, TextType
-from htmlnode import LeafNode, HTMLNode
+from src.textnode import TextNode, TextType
+from src.htmlnode import LeafNode, HTMLNode, ParentNode
 import re
 from enum import Enum
-import re
 
 class BlockType(Enum):
   PARAGRAPH = 1
@@ -110,32 +109,64 @@ def markdown_to_blocks(markdown: str) -> list[str]:
   return [b for b in blocks if b != ""]
 
 def block_to_blocktype(text: str) -> BlockType:
-  if re.search(r"^#{0,6} .*$", text):
+  if re.search(r"^#{0,6} .*$", text, re.DOTALL):
     return BlockType.HEADING
-  elif re.search(r"^`{3}.*`{3}$", text):
+  elif re.search(r"^`{3}.*`{3}$", text, re.DOTALL):
     return BlockType.CODE
   blocktype: BlockType = None
   pattern: str = ""
   lines: list[str] = text.split("\n")
-  if re.search(r"^>.*$", lines[0]):
+  if re.search(r"^>.*$", lines[0], re.DOTALL):
     blocktype = BlockType.QUOTE
     pattern = r"^>.*$"
-  elif re.search(r"^- .*$", lines[0]):
+  elif re.search(r"^- .*$", lines[0], re.DOTALL):
     blocktype = BlockType.UNORDERED_LIST
     pattern = r"^- .*$"
-  elif m := re.search(r"^(\d+)\. .*$", lines[0]):
+  elif m := re.search(r"^(\d+)\. .*$", lines[0], re.DOTALL):
     blocktype = BlockType.ORDERED_LIST
     pattern = r"^(\d+)\. .*$"
-    expected_ol_idx = int(m.group(1))
   else:
     return BlockType.PARAGRAPH
   for l in lines:
-    match = re.search(pattern, l)
+    match = re.search(pattern, l, re.DOTALL)
     if not match:
       return BlockType.PARAGRAPH
-    elif blocktype == BlockType.ORDERED_LIST:
-      ol_idx = int(match.group(1))
-      if ol_idx != expected_ol_idx:
-        return BlockType.PARAGRAPH
-      expected_ol_idx += 1
   return blocktype
+
+def text_to_htmlnode(text:str, tag:str) -> list[HTMLNode]:
+  textnodes:list[TextNode] = text_to_textnodes(text)
+  htmlnodes:list[HTMLNode] = [text_node_to_html_node(node) for node in textnodes]
+  return ParentNode(tag=tag, children=htmlnodes, props=None)
+
+def markdown_to_html_node(markdown:str) -> HTMLNode:
+  root = ParentNode("div", children=[])
+  blocks = markdown_to_blocks(markdown)
+  for block in blocks:
+    blocktype: BlockType = block_to_blocktype(block)
+    match blocktype:
+      case BlockType.PARAGRAPH:
+        root.children.append(text_to_htmlnode(text=block, tag="p"))
+      case BlockType.HEADING:
+        match = re.search(r"^(#{0,6}) (.*)$", block, re.DOTALL)
+        root.children.append(text_to_htmlnode(text=match.group(2), tag=f"h{len(match.group(1))}"))
+      case BlockType.CODE:
+        match = re.search(r"^`{3}(.*)`{3}$", block, re.DOTALL)
+        root.children.append(ParentNode("pre", children=[LeafNode("code", value=match.group(1))]))
+      case BlockType.QUOTE:
+        p_htmlnode = text_to_htmlnode(text=block[2:], tag="p")
+        root.children.append(ParentNode("blockquote", children=[p_htmlnode]))
+      case BlockType.UNORDERED_LIST:
+        ul_htmlnode = ParentNode(tag="ul", children=[])
+        for line in block.split("\n"):
+          line_match = re.search(r"^- (.*)$", line, re.DOTALL)
+          item_content = line_match.group(1).strip()
+          ul_htmlnode.children.append(text_to_htmlnode(text=item_content, tag="li"))
+        root.children.append(ul_htmlnode)
+      case BlockType.ORDERED_LIST:
+        ol_htmlnode:ParentNode = ParentNode(tag="ol", children=[])
+        for line in block.split("\n"):
+          line_match:re.Match = re.search(r"^(\d+)\. (.*)$", line, re.DOTALL)
+          item_content:str = line_match.group(2).strip()
+          ol_htmlnode.children.append(text_to_htmlnode(text=item_content, tag="li"))
+        root.children.append(ol_htmlnode)
+  return root

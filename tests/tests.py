@@ -1,8 +1,8 @@
 import unittest
 
-from htmlnode import HTMLNode, LeafNode, ParentNode
-from textnode import TextNode, TextType
-from helpers import (text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, 
+from src.htmlnode import HTMLNode, LeafNode, ParentNode
+from src.textnode import TextNode, TextType
+from src.helpers import (text_node_to_html_node, split_nodes_delimiter, extract_markdown_images, 
                      extract_markdown_links, split_nodes_image, split_nodes_link,
                      text_to_textnodes, markdown_to_blocks, block_to_blocktype, BlockType
                      )
@@ -593,6 +593,12 @@ class TestNode(unittest.TestCase):
       TextNode("link", TextType.LINK, "https://boot.dev"),
     ], nodes)
 
+  def test_text_to_textnode_no_options(self):
+    nodes = text_to_textnodes("This is completely normal text")
+    self.assertListEqual([
+      TextNode("This is completely normal text", TextType.TEXT)
+    ], nodes)
+
   ##########################################################################
   ############### markdown_to_blocks tests #################################
   ##########################################################################
@@ -722,14 +728,14 @@ This is **bolded** paragraph
   def test_block_to_blocktype_ol_invalid(self):
     type = block_to_blocktype("1. Item1\nItem2\n3. Item3")
     self.assertEqual(type, BlockType.PARAGRAPH)
-
-  def test_block_to_blocktype_ol_invalid_indexes(self):
-    type = block_to_blocktype("1. Item1\n3. Item2\n2. Item3")
-    self.assertEqual(type, BlockType.PARAGRAPH)
   
   def test_block_to_blocktype_normal_paragraph(self):
     type = block_to_blocktype("Hello world")
     self.assertEqual(type, BlockType.PARAGRAPH)
+
+  ############################################################################
+  ############### markdown_to_htmlnode tests #################################
+  ############################################################################
 
 if __name__ == "__main__":
   unittest.main()

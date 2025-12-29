@@ -1,5 +1,5 @@
-from src.textnode import TextNode, TextType
-from src.htmlnode import LeafNode, HTMLNode, ParentNode
+from textnode import TextNode, TextType
+from htmlnode import LeafNode, HTMLNode, ParentNode
 import re
 from enum import Enum
 import shutil
@@ -172,13 +172,13 @@ def markdown_to_html_node(markdown:str) -> HTMLNode:
         root.children.append(ol_htmlnode)
   return root
 
-def clear_dir(dir_path: str) -> None:
-  for c in os.listdir(dir_path):
-    new_path = os.path.join(dir_path, c)
-    if os.path.isfile(new_path):
-      os.remove(new_path)
-    elif os.path.isdir(new_path):
-      shutil.rmtree(new_path)
+# def clear_dir(dir_path: str) -> None:
+#   for c in os.listdir(dir_path):
+#     new_path = os.path.join(dir_path, c)
+#     if os.path.isfile(new_path):
+#       os.remove(new_path)
+#     elif os.path.isdir(new_path):
+#       shutil.rmtree(new_path)
 
 def copy_directory_contents_recursive(source: str, dest: str) -> None:
   os.makedirs(dest, exist_ok=True)
@@ -198,7 +198,7 @@ def extract_title(markdown:str) -> str:
       return match.group(1).strip()
   return None
 
-def generate_page(from_path:str, template_path:str, dest_path: str) -> None:
+def generate_page(from_path:str, template_path:str, dest_path:str, basepath:str) -> None:
   print(f"Generate page from {from_path} to {dest_path} using {template_path}.")
   with open(template_path, "r") as file:
     template_contents:str = file.read()
@@ -206,18 +206,21 @@ def generate_page(from_path:str, template_path:str, dest_path: str) -> None:
     md:str = file.read()
   html_content:str = markdown_to_html_node(md).to_html()
   title:str = extract_title(md)
-  html_file_content:str = template_contents.replace("{{ Title }}", title).replace("{{ Content }}", html_content)
+  html_file_content:str = template_contents.replace("{{ Title }}", title)
+  html_file_content = html_file_content.replace("{{ Content }}", html_content)
+  html_file_content = html_file_content.replace("href=\"/", f"href=\"{basepath}")
+  html_file_content = html_file_content.replace("src=\"/", f"src=\"{basepath}")
   with open(dest_path, "w") as file:
     file.write(html_file_content)
 
-def generate_page_recursive(from_path:str, template_path:str, dest_path:str) -> None:
+def generate_page_recursive(from_path:str, template_path:str, dest_path:str, basepath:str) -> None:
   for dir_content in os.listdir(from_path):
     dir_content_path = os.path.join(from_path, dir_content)
     if os.path.isfile(dir_content_path):
       match = re.search(pattern=r"^(.*)\.md$", string=dir_content)
       new_dest_path = os.path.join(dest_path, f"{match.group(1)}.html")
-      generate_page(dir_content_path, template_path, new_dest_path)
+      generate_page(dir_content_path, template_path, new_dest_path, basepath)
     else:
       new_dest_path = os.path.join(dest_path, dir_content)
-      os.mkdir(new_dest_path)
-      generate_page_recursive(dir_content_path, template_path, new_dest_path)
+      os.makedirs(new_dest_path, exist_ok=True)
+      generate_page_recursive(dir_content_path, template_path, new_dest_path, basepath)

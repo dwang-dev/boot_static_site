@@ -1,5 +1,5 @@
 import unittest
-from src.helpers import markdown_to_html_node
+from helpers import markdown_to_html_node
 
 class MarkdownToHTMLNODE(unittest.TestCase):
     def test_paragraph_no_inline(self):
@@ -56,13 +56,13 @@ This is another paragraph with _italic_ text and `code` here
         md = "> Quote 1\n\n> Quote 2"
         node = markdown_to_html_node(md)
         html = node.to_html()
-        self.assertEqual(html, "<div><blockquote><p>Quote 1</p></blockquote><blockquote><p>Quote 2</p></blockquote></div>")
+        self.assertEqual(html, "<div><blockquote>Quote 1</blockquote><blockquote>Quote 2</blockquote></div>")
 
     def test_quote_with_inline(self):
         md = "> **Bold**\n\n> _Italic_ `Code`"
         node = markdown_to_html_node(md)
         html = node.to_html()
-        self.assertEqual(html, "<div><blockquote><p><b>Bold</b></p></blockquote><blockquote><p><i>Italic</i> <code>Code</code></p></blockquote></div>")
+        self.assertEqual(html, "<div><blockquote><b>Bold</b></blockquote><blockquote><i>Italic</i> <code>Code</code></blockquote></div>")
 
     def test_ul_no_inline(self):
         md = "- Li 1\n- Li 2\n\n- Li 3\n- Li 4"

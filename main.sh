@@ -1,4 +1,2 @@
-#!/bin/bash
-cd "$(dirname "$0")"  # Ensure in project root
-python3 -m src.main
-# python3 src/main.py
+python3 src/main.py
+cd public && python3 -m http.server 8888

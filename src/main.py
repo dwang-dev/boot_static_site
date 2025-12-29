@@ -1,14 +1,22 @@
-from src.textnode import TextNode, TextType
-from src.helpers import clear_dir, copy_directory_contents_recursive, generate_page_recursive
+from helpers import copy_directory_contents_recursive, generate_page_recursive
+import sys
+import os
+import shutil
 
-source_path = "./static"
+dir_path_static = "./static"
+dir_path_public = "./docs"
+dir_path_content = "./content"
 template_path = "./template.html"
-dest_path = "./public"
 
 def main():
-    clear_dir(dest_path)
-    copy_directory_contents_recursive(source_path, dest_path)
-    generate_page_recursive(from_path="./content", template_path=template_path, dest_path=dest_path)
+    basepath = "/"
+    if len(sys.argv) > 1:
+        basepath = sys.argv[1]
+    if os.path.exists(dir_path_public):
+        print('gang')
+        shutil.rmtree(dir_path_public)
+    copy_directory_contents_recursive(dir_path_content, dir_path_public)
+    generate_page_recursive(from_path="./content", template_path=template_path, dest_path=dir_path_public, basepath=basepath)
 
 if __name__ == "__main__":
     main()

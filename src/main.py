@@ -1,4 +1,4 @@
-from helpers import copy_directory_contents_recursive, generate_page_recursive
+from page_gen import copy_directory_contents_recursive, generate_page_recursive
 import sys
 import os
 import shutil

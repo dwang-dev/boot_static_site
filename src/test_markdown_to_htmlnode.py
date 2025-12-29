@@ -1,5 +1,5 @@
 import unittest
-from helpers import markdown_to_html_node
+from block import markdown_to_html_node
 
 class MarkdownToHTMLNODE(unittest.TestCase):
     def test_paragraph_no_inline(self):

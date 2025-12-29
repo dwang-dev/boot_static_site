@@ -172,19 +172,12 @@ def markdown_to_html_node(markdown:str) -> HTMLNode:
         root.children.append(ol_htmlnode)
   return root
 
-# def clear_dir(dir_path: str) -> None:
-#   for c in os.listdir(dir_path):
-#     new_path = os.path.join(dir_path, c)
-#     if os.path.isfile(new_path):
-#       os.remove(new_path)
-#     elif os.path.isdir(new_path):
-#       shutil.rmtree(new_path)
-
 def copy_directory_contents_recursive(source: str, dest: str) -> None:
   os.makedirs(dest, exist_ok=True)
   for c in os.listdir(source):
     src_path = os.path.join(source, c)
     dest_path = os.path.join(dest, c)
+    print(f" * {src_path} -> {dest_path}")
     if os.path.isfile(src_path):
       shutil.copy2(src_path, dest_path)
     else:

@@ -78,7 +78,17 @@ def text_to_htmlnode(text:str, tag:str) -> ParentNode:
   htmlnodes:list[HTMLNode] = [text_node_to_html_node(node) for node in textnodes]
   return ParentNode(tag=tag, children=htmlnodes, props=None)
 
-def markdown_to_html_node(markdown:str) -> HTMLNode:
+def markdown_to_html_node(markdown:str) -> ParentNode:
+  """
+  Converts the string representation of a markdown doc into a single ParentNode object
+  whose children recursively describe the layout of the document.
+  
+  Params:
+    - markdown (str): String representation of a markdown document.
+  
+  Returns:
+    - ParentNode:
+  """
   root = ParentNode("div", children=[])
   blocks = markdown_to_blocks(markdown)
   for block in blocks:
